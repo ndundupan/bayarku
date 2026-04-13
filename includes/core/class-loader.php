@@ -106,7 +106,7 @@ class Loader {
 
         $template = BAYARKU_DIR . "templates/{$type}-page.php";
         if ( file_exists( $template ) ) {
-            $GLOBALS['_bayarku_tpl_order'] = $order;
+            $GLOBALS['bayarku_tpl_order'] = $order;
             load_template( $template, false );
             exit;
         }

@@ -1,4 +1,10 @@
 <?php
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals
+// phpcs:disable WordPress.PHP.DevelopmentFunctions
+// phpcs:disable WordPress.Security.EscapeOutput
+// @third-party: kazuhikoarase/qrcode-generator (MIT) — vendored, do not modify.
+
+defined( 'ABSPATH' ) || exit;
 
 //---------------------------------------------------------------
 // QRCode for PHP5

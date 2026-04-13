@@ -10,94 +10,94 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-DOKU payment gateway for WooCommerce. Saat ini mendukung QRIS — QR Code ditampilkan langsung di website Anda, tanpa redirect, polling otomatis, webhook backup.
+DOKU payment gateway for WooCommerce — QRIS QR Code displayed on your site, no redirect, auto-polling, webhook backup.
 
 == Description ==
 
-Bayarku DOKU mengintegrasikan metode pembayaran DOKU langsung ke WooCommerce menggunakan DOKU SNAP API resmi.
+Bayarku DOKU integrates DOKU payment methods directly into WooCommerce using the official DOKU SNAP API.
 
-**Saat ini tersedia:**
-- DOKU QRIS — QR Code ditampilkan di website Anda sendiri, pembeli tidak pernah meninggalkan halaman Anda
+**Currently available:**
+- DOKU QRIS — QR Code is displayed on your own website; the buyer never leaves your checkout page.
 
-**Segera hadir:**
+**Coming soon:**
 - DOKU Virtual Account
 - DOKU eWallet (OVO, GoPay, Dana)
 
-**Fitur:**
-- QR Code QRIS ditampilkan di website Anda sendiri — pembeli tidak pernah meninggalkan halaman Anda
-- Polling otomatis setiap 4 detik — halaman redirect ke thank-you page secara otomatis saat pembayaran berhasil
-- Webhook backup (`POST /wp-json/bayarku/v1/notify/doku`) — menangkap pembayaran yang terlewat polling
-- Sandbox / Production toggle di WP Admin
-- Kredensial tersimpan aman di WordPress options — tidak pernah di-hardcode
+**Features:**
+- QRIS QR Code displayed on your own site — buyer never leaves your page
+- Auto-polling every 4 seconds — page redirects to thank-you automatically when payment succeeds
+- Webhook backup (`POST /wp-json/bayarku/v1/notify/doku`) — catches payments missed by polling
+- Sandbox / Production toggle in WP Admin
+- Credentials stored securely in WordPress options — never hardcoded
 - HPOS (High-Performance Order Storage) compatible
-- QR Code di-generate lokal menggunakan PHP GD — tidak ada request ke layanan eksternal selain DOKU
+- QR Code generated locally using PHP GD — no external requests beyond DOKU
 
-**Penting:** Anda perlu mendaftar di DOKU secara terpisah di https://dashboard.doku.com untuk mendapatkan Client ID, Shared Key, Private Key, dan Terminal ID.
+**Important:** You must register separately at https://dashboard.doku.com to obtain your Client ID, Shared Key, Private Key, and Terminal ID.
 
 == Installation ==
 
-1. Upload folder `bayarku` ke `/wp-content/plugins/`.
-2. Aktifkan plugin melalui menu WordPress Plugins.
-3. Buka **WooCommerce → Pengaturan → Pembayaran → QRIS (DOKU)**.
-4. Masukkan kredensial DOKU Anda (Client ID, Shared Key, Private Key, QRIS Client ID, Terminal ID).
-5. Set webhook URL di dashboard DOKU ke: `https://yourdomain.com/wp-json/bayarku/v1/notify/doku`
-6. Matikan Sandbox saat siap ke production.
-7. Simpan dan uji dengan pesanan nyata.
+1. Upload the `bayarku` folder to `/wp-content/plugins/`.
+2. Activate the plugin via the WordPress Plugins menu.
+3. Go to **WooCommerce > Settings > Payments > QRIS (DOKU)**.
+4. Enter your DOKU credentials (Client ID, Shared Key, Private Key, QRIS Client ID, Terminal ID).
+5. Set the webhook URL in the DOKU dashboard to: `https://yourdomain.com/wp-json/bayarku/v1/notify/doku`
+6. Disable Sandbox when ready for production.
+7. Save and test with a real order.
 
-Setelah mengaktifkan plugin, buka **Pengaturan → Permalink** dan klik Simpan untuk flush rewrite rules (diperlukan untuk halaman pembayaran).
+After activating the plugin, go to **Settings > Permalinks** and click Save to flush rewrite rules (required for the payment page).
 
 == Frequently Asked Questions ==
 
-= Apakah saya perlu akun DOKU? =
-Ya. Daftar di https://dashboard.doku.com. Plugin ini menggunakan DOKU SNAP API yang memerlukan kredensial resmi.
+= Do I need a DOKU account? =
+Yes. Register at https://dashboard.doku.com. This plugin uses the DOKU SNAP API which requires official credentials.
 
-= Di mana QR Code ditampilkan? =
-Di website Anda sendiri di `/bayarku-payment/` — pembeli tidak pernah meninggalkan website Anda.
+= Where is the QR Code displayed? =
+On your own website at `/bayarku-payment/` — the buyer never leaves your site.
 
-= Apakah plugin ini berafiliasi dengan DOKU? =
-Tidak. Ini adalah plugin open-source independen yang menggunakan DOKU SNAP API publik.
+= Is this plugin affiliated with DOKU? =
+No. This is an independent open-source plugin that uses the public DOKU SNAP API.
 
-= Apakah bisa digunakan di mode sandbox? =
-Ya. Ada toggle Sandbox di halaman pengaturan gateway.
+= Can I use sandbox mode? =
+Yes. There is a Sandbox toggle on the gateway settings page.
 
-= Apakah Virtual Account dan eWallet sudah bisa digunakan? =
-Belum. VA dan eWallet sedang dalam pengembangan dan akan tersedia di versi berikutnya.
+= Are Virtual Account and eWallet available yet? =
+Not yet. VA and eWallet are under development and will be available in a future release.
 
 == Third-Party Libraries ==
 
-Plugin ini menyertakan library open-source berikut:
+This plugin includes the following open-source library:
 
 * **QR Code Generator for PHP** by Kazuhiko Arase
 * Source: https://github.com/kazuhikoarase/qrcode-generator
 * License: MIT
 * Location: `includes/lib/qrcode.php`
-* Purpose: Generate QR Code image secara lokal menggunakan PHP GD extension — tidak memerlukan layanan eksternal.
+* Purpose: Generates QR Code images locally using the PHP GD extension — no external service required.
 
 == External Services ==
 
-Plugin ini terhubung ke layanan eksternal berikut:
+This plugin connects to the following external service:
 
 = api.doku.com / api-sandbox.doku.com (DOKU SNAP API) =
-Semua operasi pembayaran (generate QR, query status, cancel QR) dikirim ke DOKU SNAP API resmi.
+All payment operations (generate QR, query status, cancel QR) are sent to the official DOKU SNAP API.
 
 * Production: https://api.doku.com
 * Sandbox: https://api-sandbox.doku.com
-* Data yang dikirim: jumlah pesanan, kredensial merchant, nomor referensi QR
+* Data sent: order amount, merchant credentials, QR reference number
 * Privacy policy: https://www.doku.com/privacy-policy
 
-Anda harus mendaftar di https://dashboard.doku.com dan menyetujui syarat DOKU sebelum menggunakan plugin ini.
+You must register at https://dashboard.doku.com and agree to DOKU's terms before using this plugin.
 
 == Privacy Policy ==
 
-Plugin ini sendiri tidak mengumpulkan, menyimpan, atau mengirimkan data pribadi di luar apa yang sudah ditangani WooCommerce. Namun:
+This plugin itself does not collect, store, or transmit personal data beyond what WooCommerce already handles. However:
 
-1. **DOKU API**: Jumlah pesanan dan kredensial merchant dikirim ke server DOKU untuk memproses pembayaran.
+1. **DOKU API**: Order amounts and merchant credentials are sent to DOKU servers to process payments.
 
-QR Code image di-generate **lokal** di server Anda menggunakan library qrcode-generator yang sudah dibundel. Tidak ada data yang dikirim ke layanan eksternal untuk rendering QR.
+QR Code images are generated **locally** on your server using the bundled qrcode-generator library. No data is sent to any external service for QR rendering.
 
-Pemilik toko yang menggunakan plugin ini di wilayah yang tercakup GDPR atau undang-undang privasi serupa harus mengungkapkan alur data DOKU dalam kebijakan privasi mereka.
+Store owners using this plugin in regions covered by GDPR or similar privacy laws should disclose the DOKU data flow in their own privacy policies.
 
 == Changelog ==
 
 = 1.0.0 =
-* Rilis awal — DOKU QRIS full implementation.
+* Initial release — DOKU QRIS full implementation.

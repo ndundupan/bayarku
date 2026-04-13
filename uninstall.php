@@ -13,7 +13,7 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 // -------------------------------------------------------------------------
 // Remove individual credential options (mirrored by DokuProvider)
 // -------------------------------------------------------------------------
-$standalone_options = [
+$bayarku_standalone_options = [
     'bayarku_doku_client_id',
     'bayarku_doku_client_secret',
     'bayarku_doku_private_key',
@@ -21,14 +21,14 @@ $standalone_options = [
     'bayarku_doku_terminal_id',
 ];
 
-foreach ( $standalone_options as $option ) {
-    delete_option( $option );
+foreach ( $bayarku_standalone_options as $bayarku_option ) {
+    delete_option( $bayarku_option );
 }
 
 // -------------------------------------------------------------------------
 // Remove WooCommerce gateway settings (stored as woocommerce_{id}_settings)
 // -------------------------------------------------------------------------
-$gateway_settings = [
+$bayarku_gateway_settings = [
     'woocommerce_bayarku_doku_qris_settings',
     'woocommerce_bayarku_doku_va_settings',
     'woocommerce_bayarku_doku_ewallet_settings',
@@ -38,8 +38,8 @@ $gateway_settings = [
     'woocommerce_bayarku_duitku_qris_settings',
 ];
 
-foreach ( $gateway_settings as $option ) {
-    delete_option( $option );
+foreach ( $bayarku_gateway_settings as $bayarku_option ) {
+    delete_option( $bayarku_option );
 }
 
 // -------------------------------------------------------------------------

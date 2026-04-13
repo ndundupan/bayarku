@@ -50,6 +50,7 @@ abstract class Provider {
         ] );
 
         if ( is_wp_error( $response ) ) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \RuntimeException( 'HTTP error: ' . $response->get_error_message() );
         }
 
@@ -60,6 +61,7 @@ abstract class Provider {
         if ( $code >= 500 ) {
             // On server errors, log responseMessage to aid debugging
             $this->log( sprintf( '[%s] POST %s → %d ERROR: %s', static::class, $endpoint, $code, $parsed['responseMessage'] ?? 'unknown' ) );
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \RuntimeException( "Provider returned HTTP $code for $endpoint" );
         }
 

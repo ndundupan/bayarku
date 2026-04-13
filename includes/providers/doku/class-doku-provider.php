@@ -74,6 +74,7 @@ class DokuProvider extends Provider {
         ] );
 
         if ( is_wp_error( $response ) ) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \RuntimeException( 'DOKU token request failed: ' . $response->get_error_message() );
         }
 
@@ -123,6 +124,7 @@ class DokuProvider extends Provider {
 
         if ( ( $response['body']['responseCode'] ?? '' ) !== '2004700' ) {
             $this->log( 'QRIS generate failed', $response['body'] );
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \RuntimeException(
                 'DOKU QRIS generate error: ' . ( $response['body']['responseMessage'] ?? 'unknown' )
             );
@@ -271,7 +273,7 @@ class DokuProvider extends Provider {
      * DOKU requires alphanumeric only (A-Z, a-z, 0-9), max 36 chars.
      */
     private function external_id(): string {
-        return date( 'Ymd' ) . bin2hex( random_bytes( 8 ) );
+        return gmdate( 'Ymd' ) . bin2hex( random_bytes( 8 ) );
     }
 
     // -------------------------------------------------------------------------

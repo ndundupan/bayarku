@@ -10,7 +10,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$order = $GLOBALS['_bayarku_tpl_order'];
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- template variables, not global scope.
+$order = $GLOBALS['bayarku_tpl_order'];
 
 get_header();
 

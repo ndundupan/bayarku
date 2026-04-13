@@ -212,8 +212,8 @@ class DokuQris extends Gateway {
     // -------------------------------------------------------------------------
 
     public function ajax_poll_qris(): void {
-        $order_id = (int) ( $_POST['order_id'] ?? 0 );
-        $nonce    = sanitize_text_field( $_POST['nonce'] ?? '' );
+        $order_id = absint( wp_unslash( $_POST['order_id'] ?? 0 ) );
+        $nonce    = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
 
         if ( ! wp_verify_nonce( $nonce, 'bayarku_poll_' . $order_id ) ) {
             wp_send_json_error( [ 'message' => 'Sesi tidak valid.' ], 403 );
@@ -363,7 +363,9 @@ class DokuQris extends Gateway {
             require_once BAYARKU_DIR . 'includes/lib/qrcode.php';
 
             // Convert trigger_error(E_USER_ERROR) → catchable exception
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler
             set_error_handler( function ( int $errno, string $errstr ): bool {
+                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
                 throw new \RuntimeException( $errstr, $errno );
             }, E_USER_ERROR );
 
