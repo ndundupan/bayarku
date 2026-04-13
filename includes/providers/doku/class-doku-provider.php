@@ -124,10 +124,11 @@ class DokuProvider extends Provider {
 
         if ( ( $response['body']['responseCode'] ?? '' ) !== '2004700' ) {
             $this->log( 'QRIS generate failed', $response['body'] );
-            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+            // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped
             throw new \RuntimeException(
                 'DOKU QRIS generate error: ' . ( $response['body']['responseMessage'] ?? 'unknown' )
             );
+            // phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
         }
 
         return [
