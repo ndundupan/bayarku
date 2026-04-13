@@ -1,4 +1,4 @@
-=== Bayarku DOKU for WooCommerce ===
+=== Bayarku – DOKU Payment Gateway for WooCommerce ===
 Contributors: panduaji
 Tags: woocommerce, payment gateway, qris, doku
 Requires at least: 6.0

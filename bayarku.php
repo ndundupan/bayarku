@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Bayarku DOKU for WooCommerce
+ * Plugin Name: Bayarku – DOKU Payment Gateway for WooCommerce
  * Plugin URI:  https://berdikaristudio.com/bayarku
  * Description: DOKU payment gateway for WooCommerce. Mulai dari QRIS — QR Code ditampilkan langsung di website Anda, tanpa redirect, polling otomatis, webhook backup.
  * Version:     1.0.0
