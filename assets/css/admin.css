@@ -1,0 +1,11 @@
+/* Bayarku — Admin Settings Styles */
+
+.woocommerce table.form-table .bayarku-section-title td,
+.woocommerce table.form-table .bayarku-section-title th {
+    padding-top: 24px;
+    border-top: 1px solid #ddd;
+}
+
+.woocommerce table.form-table input[type="password"] {
+    font-family: monospace;
+}

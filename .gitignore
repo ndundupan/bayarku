@@ -1,0 +1,36 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+*.log
+
+# Composer
+/vendor/
+composer.lock
+
+# Node / build tools
+node_modules/
+npm-debug.log*
+yarn-error.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# PHPUnit / testing
+/tests/
+phpunit.xml
+phpunit.xml.dist
+.phpunit.result.cache
+
+# Release artifacts (keep source, not built ZIPs)
+*.zip
+
+# Environment
+.env
+.env.*
