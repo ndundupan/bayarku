@@ -191,6 +191,9 @@ class DokuQris extends Gateway {
             }
             $this->save_order_meta( $order, $meta );
 
+            // Kirim email QR ke pembeli
+            $this->send_qris_email( $order, $meta );
+
             // Mark order as pending payment
             $order->update_status( 'pending', 'Menunggu pembayaran QRIS DOKU.' );
 
@@ -304,8 +307,16 @@ class DokuQris extends Gateway {
         $external_id = $request->get_header( 'x-external-id' ) ?? '';
         $raw_body    = $request->get_body();
 
+        // Extract Bearer token from Authorization header — DOKU includes this in webhook notifications
+        // and uses it in the string-to-sign. Empty string if not present.
+        $auth         = $request->get_header( 'authorization' ) ?? '';
+        $access_token = '';
+        if ( preg_match( '/^Bearer\s+(.+)$/i', $auth, $m ) ) {
+            $access_token = trim( $m[1] );
+        }
+
         $provider = new DokuProvider( $this->is_sandbox() );
-        return $provider->verify_webhook_signature( $raw_body, $timestamp, $external_id, $signature );
+        return $provider->verify_webhook_signature( $raw_body, $timestamp, $external_id, $signature, $access_token );
     }
 
     public function handle_webhook( \WP_REST_Request $request ): \WP_REST_Response {
@@ -422,6 +433,93 @@ class DokuQris extends Gateway {
             restore_error_handler();
             wc_get_logger()->warning( 'Bayarku: gagal generate QR image lokal: ' . $e->getMessage(), [ 'source' => 'bayarku' ] );
             return '';
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Email QRIS ke pembeli
+    // -------------------------------------------------------------------------
+
+    private function send_qris_email( \WC_Order $order, array $meta ): void {
+        $to = $order->get_billing_email();
+        if ( ! $to ) {
+            return;
+        }
+
+        $order_id     = $order->get_id();
+        $order_number = $order->get_order_number();
+        $total        = $order->get_formatted_order_total();
+        $expires_at   = (int) ( $meta['qr_expires_at'] ?? 0 );
+        $expires_str  = $expires_at
+            ? wp_date( 'd M Y, H:i', $expires_at, new \DateTimeZone( 'Asia/Jakarta' ) ) . ' WIB'
+            : '-';
+
+        $payment_url = add_query_arg( [
+            'bayarku_order' => $order_id,
+            'bayarku_type'  => 'qr',
+            'bayarku_key'   => $order->get_order_key(),
+        ], home_url( '/bayarku-payment/' ) );
+
+        // Simpan QR image ke file temp agar bisa dilampirkan (base64 di <img> diblokir Gmail)
+        $attachment = [];
+        $tmp_file   = '';
+        $qr_b64     = $meta['qr_image'] ?? '';
+
+        if ( $qr_b64 ) {
+            $upload     = wp_upload_dir();
+            $tmp_file   = $upload['basedir'] . '/bayarku-qr-' . $order_id . '-' . time() . '.png';
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+            file_put_contents( $tmp_file, base64_decode( $qr_b64 ) );
+            $attachment[] = $tmp_file;
+        }
+
+        $site_name = get_bloginfo( 'name' );
+        $subject   = sprintf( '[%s] QR Code Pembayaran – Pesanan #%s', $site_name, $order_number );
+        $first_name = $order->get_billing_first_name();
+
+        ob_start();
+        ?>
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:560px;margin:0 auto;padding:20px;">
+    <h2 style="color:#333;">QR Code Pembayaran</h2>
+    <p>Halo <?php echo esc_html( $first_name ); ?>,</p>
+    <p>Terima kasih telah berbelanja di <strong><?php echo esc_html( $site_name ); ?></strong>.</p>
+    <p>Berikut detail pembayaran Anda:</p>
+    <table style="border-collapse:collapse;width:100%;">
+        <tr><td style="padding:6px 0;color:#555;">Nomor Pesanan</td><td style="padding:6px 0;"><strong>#<?php echo esc_html( $order_number ); ?></strong></td></tr>
+        <tr><td style="padding:6px 0;color:#555;">Total</td><td style="padding:6px 0;"><strong><?php echo wp_kses_post( $total ); ?></strong></td></tr>
+        <tr><td style="padding:6px 0;color:#555;">QR Berlaku Hingga</td><td style="padding:6px 0;"><?php echo esc_html( $expires_str ); ?></td></tr>
+    </table>
+    <?php if ( $qr_b64 ) : ?>
+    <p style="margin-top:20px;">QR Code QRIS terlampir pada email ini. Buka lampiran dan scan menggunakan aplikasi mobile banking atau e-wallet yang mendukung QRIS.</p>
+    <?php endif; ?>
+    <p>Atau klik tautan di bawah untuk membuka halaman pembayaran:</p>
+    <p><a href="<?php echo esc_url( $payment_url ); ?>" style="background:#2563eb;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;display:inline-block;">Buka Halaman Pembayaran</a></p>
+    <p style="color:#888;font-size:13px;margin-top:24px;">Jika Anda sudah membayar, abaikan email ini.</p>
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+    <p style="color:#aaa;font-size:12px;"><?php echo esc_html( $site_name ); ?></p>
+</body>
+</html>
+        <?php
+        $message = ob_get_clean();
+
+        $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
+
+        $sent = wp_mail( $to, $subject, $message, $headers, $attachment );
+
+        // Hapus file temp setelah kirim
+        if ( $tmp_file && file_exists( $tmp_file ) ) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+            unlink( $tmp_file );
+        }
+
+        if ( ! $sent ) {
+            wc_get_logger()->warning(
+                sprintf( 'Bayarku: gagal kirim email QRIS ke %s untuk order #%s', $to, $order_number ),
+                [ 'source' => 'bayarku' ]
+            );
         }
     }
 
