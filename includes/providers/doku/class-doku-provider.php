@@ -291,26 +291,43 @@ class DokuProvider extends Provider {
 
     /**
      * Validate webhook notification from DOKU.
-     * DOKU sends X-SIGNATURE header using the same HMAC_SHA512 method.
+     *
+     * DOKU SNAP notify signature:
+     *   stringToSign = "NOTIFY" + ":" + relativeNotifyPath + ":" + accessToken + ":" + sha256(body) + ":" + timestamp
+     *   X-SIGNATURE  = HMAC-SHA512(clientSecret, stringToSign)
+     *
+     * relativeNotifyPath = path component of our REST notify URL (e.g. /wp-json/bayarku/v1/notify/doku)
+     * accessToken        = Bearer token from DOKU's Authorization header (empty string if absent)
      *
      * @param string $payload      Raw request body
      * @param string $timestamp    X-TIMESTAMP header value
      * @param string $external_id  X-EXTERNAL-ID header value
      * @param string $signature    X-SIGNATURE header value to verify
+     * @param string $access_token Bearer token from Authorization header sent by DOKU
      */
     public function verify_webhook_signature(
         string $payload,
         string $timestamp,
         string $external_id,
-        string $signature
+        string $signature,
+        string $access_token = ''
     ): bool {
-        // DOKU webhook stringToSign (notify direction):
-        // clientId + "|" + X-EXTERNAL-ID + "|" + X-TIMESTAMP
-        // Note: verify against notification spec — adjust if DOKU changes format
+        $notify_path    = wp_parse_url( get_rest_url( null, 'bayarku/v1/notify/doku' ), PHP_URL_PATH );
         $body_hash      = strtolower( hash( 'sha256', $payload ) );
-        $string_to_sign = 'NOTIFY:' . '/snap-adapter/b2b/v1.0/qr/qr-mpm-notify' . ':' . $this->get_access_token() . ':' . $body_hash . ':' . $timestamp;
+        $string_to_sign = 'NOTIFY:' . $notify_path . ':' . $access_token . ':' . $body_hash . ':' . $timestamp;
         $expected       = $this->hmac_sha512( $string_to_sign );
 
-        return hash_equals( $expected, $signature );
+        $result = hash_equals( $expected, $signature );
+
+        // Debug log — hapus setelah webhook terkonfirmasi berjalan
+        $this->log( 'DOKU webhook verify', [
+            'notify_path'    => $notify_path,
+            'has_auth_token' => ! empty( $access_token ),
+            'body_hash'      => $body_hash,
+            'timestamp'      => $timestamp,
+            'signature_ok'   => $result,
+        ] );
+
+        return $result;
     }
 }
