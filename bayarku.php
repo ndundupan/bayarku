@@ -1,17 +1,18 @@
 <?php
 /**
- * Plugin Name: Bayarku – DOKU Payment Gateway for WooCommerce
+ * Plugin Name: Bayarku Indonesian Payments for WooCommerce
  * Plugin URI:  https://berdikaristudio.com/bayarku
- * Description: DOKU payment gateway for WooCommerce. Mulai dari QRIS — QR Code ditampilkan langsung di website Anda, tanpa redirect, polling otomatis, webhook backup.
+ * Description: Accept Indonesian payment methods in WooCommerce. QRIS is rendered on your own site — no redirect, auto-polling, webhook backup. Independent integration, not affiliated with DOKU or WooCommerce.
  * Version:     1.0.0
- * Author:      Panduaji
- * Author URI:  https://panduaji.com
+ * Author:      Berdikari Studio
+ * Author URI:  https://berdikaristudio.com
  * License:     GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: bayarku
+ * Text Domain: bayarku-indonesian-payments-for-woocommerce
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 8.0
+ * Requires Plugins: woocommerce
  * WC requires at least: 7.0
  * WC tested up to: 10.6
  */

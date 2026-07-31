@@ -1,27 +1,37 @@
-=== Bayarku – DOKU Payment Gateway for WooCommerce ===
-Contributors: panduaji
-Tags: woocommerce, payment gateway, qris, doku
+=== Bayarku Indonesian Payments for WooCommerce ===
+Contributors: ndundupan
+Tags: woocommerce, payment gateway, qris, indonesia, checkout
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
+Requires Plugins: woocommerce
 WC requires at least: 7.0
 WC tested up to: 10.6
 Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-DOKU payment gateway for WooCommerce — QRIS QR Code displayed on your site, no redirect, auto-polling, webhook backup.
+Accept Indonesian payment methods in WooCommerce. QRIS is shown on your own site — no redirect, auto-polling, webhook backup.
 
 == Description ==
 
-Bayarku DOKU integrates DOKU payment methods directly into WooCommerce using the official DOKU SNAP API.
+Bayarku lets a WooCommerce store accept Indonesian payment methods without sending the buyer away to a hosted payment page. The QR code, and later the virtual account number, is rendered on your own checkout.
+
+The plugin is built around a provider abstraction, so support for additional Indonesian payment providers can be added without changing how you configure the store.
 
 **Currently available:**
-- DOKU QRIS — QR Code is displayed on your own website; the buyer never leaves your checkout page.
+- QRIS via DOKU — the QR code is displayed on your own website; the buyer never leaves your checkout page.
 
-**Coming soon:**
-- DOKU Virtual Account
-- DOKU eWallet (OVO, GoPay, Dana)
+**Planned:**
+- Virtual Account
+- eWallet
+- Additional payment providers
+
+== Trademark notice ==
+
+This plugin is an independent integration and is not affiliated with, endorsed by, or sponsored by DOKU (PT Nusa Satu Inti Artha) or WooCommerce. "DOKU", "QRIS" and "WooCommerce" are the property of their respective owners and are used here only to describe which services this plugin connects to.
+
+You need your own merchant account with the payment provider in order to use this plugin.
 
 **Features:**
 - QRIS QR Code displayed on your own site — buyer never leaves your page
@@ -83,7 +93,7 @@ All payment operations (generate QR, query status, cancel QR) are sent to the of
 * Production: https://api.doku.com
 * Sandbox: https://api-sandbox.doku.com
 * Data sent: order amount, merchant credentials, QR reference number
-* Privacy policy: https://www.doku.com/privacy-policy
+* Privacy policy: https://www.doku.com/en/privacy-policy
 
 You must register at https://dashboard.doku.com and agree to DOKU's terms before using this plugin.
 

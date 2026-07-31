@@ -1,6 +1,8 @@
-# Bayarku DOKU for WooCommerce
+# Bayarku Indonesian Payments for WooCommerce
 
-**DOKU payment gateway for WooCommerce** — mulai dari QRIS, segera hadir Virtual Account dan eWallet.
+**Metode pembayaran Indonesia untuk WooCommerce** — mulai dari QRIS via DOKU, menyusul Virtual Account dan eWallet.
+
+> Integrasi independen. Tidak berafiliasi dengan, tidak didukung, dan tidak disponsori oleh DOKU maupun WooCommerce.
 
 [![License: GPLv2](https://img.shields.io/badge/License-GPLv2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
 [![WooCommerce 7.0+](https://img.shields.io/badge/WooCommerce-7.0%2B-purple.svg)](https://woocommerce.com)
@@ -40,7 +42,7 @@
 
 ### Dari ZIP (manual)
 
-1. Download ZIP dari [halaman Releases](https://github.com/panduaji/bayarku/releases).
+1. Download ZIP dari [halaman Releases](https://github.com/ndundupan/bayarku/releases).
 2. **WordPress Admin → Plugins → Add New → Upload Plugin**.
 3. Upload ZIP, lalu klik **Activate**.
 
@@ -48,7 +50,7 @@
 
 ```bash
 cd /path/to/wp-content/plugins/
-git clone https://github.com/panduaji/bayarku.git bayarku
+git clone https://github.com/ndundupan/bayarku.git bayarku
 ```
 
 Aktifkan dari **WP Admin → Plugins**.
@@ -114,7 +116,7 @@ Checkout → process_payment()
 
 | Service | Tujuan | Privacy Policy |
 |---|---|---|
-| `api.doku.com` | DOKU SNAP API (production) | [doku.com/privacy-policy](https://www.doku.com/privacy-policy) |
+| `api.doku.com` | DOKU SNAP API (production) | [doku.com/en/privacy-policy](https://www.doku.com/en/privacy-policy) |
 | `api-sandbox.doku.com` | DOKU SNAP API (sandbox) | Sama |
 
 QR Code di-generate **lokal** menggunakan library [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) PHP (MIT) via PHP GD. Tidak ada request eksternal untuk rendering QR.
