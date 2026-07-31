@@ -373,20 +373,14 @@ class DokuQris extends Gateway {
         try {
             require_once BAYARKU_DIR . 'includes/lib/qrcode.php';
 
-            // Convert trigger_error(E_USER_ERROR) → catchable exception
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler
-            set_error_handler( function ( int $errno, string $errstr ): bool {
-                // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-                throw new \RuntimeException( $errstr, $errno );
-            }, E_USER_ERROR );
-
-            // Auto-detect minimum QR version (type 1–40) that fits the data
+            // Auto-detect minimum QR version (type 1–40) that fits the data.
+            // The library throws when the payload does not fit the version.
             $qr = null;
             for ( $type = 1; $type <= 40; $type++ ) {
                 try {
-                    $attempt = new \QRCode();
+                    $attempt = new \Bayarku\Lib\QRCode();
                     $attempt->setTypeNumber( $type );
-                    $attempt->setErrorCorrectLevel( QR_ERROR_CORRECT_LEVEL_M );
+                    $attempt->setErrorCorrectLevel( \Bayarku\Lib\QR_ERROR_CORRECT_LEVEL_M );
                     $attempt->addData( $qr_content );
                     $attempt->make();
                     $qr = $attempt;
@@ -395,8 +389,6 @@ class DokuQris extends Gateway {
                     // Type too small for data length — try next
                 }
             }
-
-            restore_error_handler();
 
             if ( ! $qr ) {
                 return '';
@@ -430,7 +422,6 @@ class DokuQris extends Gateway {
             return base64_encode( $png );
 
         } catch ( \Throwable $e ) {
-            restore_error_handler();
             wc_get_logger()->warning( 'Bayarku: gagal generate QR image lokal: ' . $e->getMessage(), [ 'source' => 'bayarku' ] );
             return '';
         }
