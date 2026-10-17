@@ -19,6 +19,11 @@ use Bayarku\Abstracts\Provider;
  *   bayarku_doku_merchant_id
  *   bayarku_doku_terminal_id
  *   bayarku_doku_sandbox  (yes|no)
+ *
+ * Secrets can (and should) live in wp-config.php instead, so they never reach the
+ * database or the object cache. When defined, these constants win over the options:
+ *   BAYARKU_DOKU_CLIENT_SECRET
+ *   BAYARKU_DOKU_PRIVATE_KEY   (PEM, newlines allowed)
  */
 class DokuProvider extends Provider {
 
@@ -35,8 +40,8 @@ class DokuProvider extends Provider {
         parent::__construct( $sandbox );
 
         $this->client_id     = get_option( 'bayarku_doku_client_id', '' );
-        $this->client_secret = trim( get_option( 'bayarku_doku_client_secret', '' ) );
-        $this->private_key   = get_option( 'bayarku_doku_private_key', '' );
+        $this->client_secret = trim( defined( 'BAYARKU_DOKU_CLIENT_SECRET' ) ? (string) BAYARKU_DOKU_CLIENT_SECRET : get_option( 'bayarku_doku_client_secret', '' ) );
+        $this->private_key   = defined( 'BAYARKU_DOKU_PRIVATE_KEY' ) ? (string) BAYARKU_DOKU_PRIVATE_KEY : get_option( 'bayarku_doku_private_key', '' );
         $this->merchant_id   = get_option( 'bayarku_doku_merchant_id', '' );
         $this->terminal_id   = get_option( 'bayarku_doku_terminal_id', '' );
     }
