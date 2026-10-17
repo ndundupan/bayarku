@@ -322,17 +322,6 @@ class DokuProvider extends Provider {
         $string_to_sign = 'NOTIFY:' . $notify_path . ':' . $access_token . ':' . $body_hash . ':' . $timestamp;
         $expected       = $this->hmac_sha512( $string_to_sign );
 
-        $result = hash_equals( $expected, $signature );
-
-        // Debug log — hapus setelah webhook terkonfirmasi berjalan
-        $this->log( 'DOKU webhook verify', [
-            'notify_path'    => $notify_path,
-            'has_auth_token' => ! empty( $access_token ),
-            'body_hash'      => $body_hash,
-            'timestamp'      => $timestamp,
-            'signature_ok'   => $result,
-        ] );
-
-        return $result;
+        return hash_equals( $expected, $signature );
     }
 }

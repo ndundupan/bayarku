@@ -345,6 +345,13 @@ class DokuQris extends Gateway {
             $access_token = trim( $m[1] );
         }
 
+        // Reject stale or future-dated notifications so a captured request cannot be replayed later
+        $sent_at = strtotime( $timestamp );
+        if ( ! $sent_at || abs( time() - $sent_at ) > 5 * MINUTE_IN_SECONDS ) {
+            wc_get_logger()->warning( 'DOKU webhook: X-TIMESTAMP kosong atau di luar jendela 5 menit', [ 'source' => 'bayarku' ] );
+            return false;
+        }
+
         $provider = new DokuProvider( $this->is_sandbox() );
         return $provider->verify_webhook_signature( $raw_body, $timestamp, $external_id, $signature, $access_token );
     }
@@ -361,6 +368,22 @@ class DokuQris extends Gateway {
 
         if ( ! $order ) {
             return new \WP_REST_Response( [ 'responseCode' => '4042512', 'responseMessage' => 'Order not found' ], 404 );
+        }
+
+        // The notification must match the QR we issued for this order: our gateway, DOKU's referenceNo, the amount
+        $expected_ref = (string) $this->get_order_meta( $order, 'reference_no' );
+        $paid_amount  = $body['amount']['value'] ?? null;
+        $problem      = '';
+        if ( $order->get_payment_method() !== $this->id ) {
+            $problem = 'metode bayar pesanan bukan ' . $this->id;
+        } elseif ( $reference === '' || $expected_ref === '' || ! hash_equals( $expected_ref, (string) $reference ) ) {
+            $problem = 'originalReferenceNo tidak cocok';
+        } elseif ( $paid_amount === null || (int) round( (float) $paid_amount ) !== (int) round( (float) $order->get_total() ) ) {
+            $problem = 'nominal tidak cocok';
+        }
+        if ( $problem !== '' ) {
+            wc_get_logger()->warning( sprintf( 'DOKU webhook ditolak untuk pesanan #%d: %s', $order_id, $problem ), [ 'source' => 'bayarku' ] );
+            return new \WP_REST_Response( [ 'responseCode' => '4002501', 'responseMessage' => 'Invalid Field Format' ], 400 );
         }
 
         if ( $tx_status === '00' ) {
