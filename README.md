@@ -40,7 +40,7 @@
 
 ### Dari ZIP (manual)
 
-1. Download ZIP dari [halaman Releases](https://github.com/panduaji/bayarku/releases).
+1. Download `bayarku.zip` dari [halaman Releases](https://github.com/ndundupan/bayarku/releases/latest).
 2. **WordPress Admin → Plugins → Add New → Upload Plugin**.
 3. Upload ZIP, lalu klik **Activate**.
 
@@ -48,7 +48,7 @@
 
 ```bash
 cd /path/to/wp-content/plugins/
-git clone https://github.com/panduaji/bayarku.git bayarku
+git clone https://github.com/ndundupan/bayarku.git bayarku
 ```
 
 Aktifkan dari **WP Admin → Plugins**.
