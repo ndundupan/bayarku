@@ -505,19 +505,7 @@ class DokuQris extends Gateway {
             'bayarku_key'   => $order->get_order_key(),
         ], home_url( '/bayarku-payment/' ) );
 
-        // Simpan QR image ke file temp agar bisa dilampirkan (base64 di <img> diblokir Gmail)
-        $attachment = [];
-        $tmp_file   = '';
-        $qr_b64     = $meta['qr_image'] ?? '';
-
-        if ( $qr_b64 ) {
-            $upload     = wp_upload_dir();
-            $tmp_file   = $upload['basedir'] . '/bayarku-qr-' . $order_id . '-' . time() . '.png';
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-            file_put_contents( $tmp_file, base64_decode( $qr_b64 ) );
-            $attachment[] = $tmp_file;
-        }
-
+        $qr_b64    = $meta['qr_image'] ?? '';
         $site_name = get_bloginfo( 'name' );
         $subject   = sprintf( '[%s] QR Code Pembayaran – Pesanan #%s', $site_name, $order_number );
         $first_name = $order->get_billing_first_name();
@@ -552,12 +540,32 @@ class DokuQris extends Gateway {
 
         $headers = [ 'Content-Type: text/html; charset=UTF-8' ];
 
-        $sent = wp_mail( $to, $subject, $message, $headers, $attachment );
+        // QR dilampirkan sebagai file (base64 di <img> diblokir Gmail). File sementara ditulis ke
+        // direktori temp sistem lewat wp_tempnam() — bukan ke uploads yang bisa diakses publik —
+        // dan selalu dihapus setelah wp_mail() selesai, berhasil maupun gagal.
+        $attachment = [];
+        $tmp_file   = '';
 
-        // Hapus file temp setelah kirim
-        if ( $tmp_file && file_exists( $tmp_file ) ) {
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-            unlink( $tmp_file );
+        if ( $qr_b64 ) {
+            $png = base64_decode( $qr_b64, true );
+            if ( $png !== false && $png !== '' ) {
+                if ( ! function_exists( 'wp_tempnam' ) ) {
+                    require_once ABSPATH . 'wp-admin/includes/file.php';
+                }
+                $tmp_file = wp_tempnam( 'bayarku-qr-' . $order_id . '.png' );
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+                if ( $tmp_file && file_put_contents( $tmp_file, $png ) !== false ) {
+                    $attachment[] = $tmp_file;
+                }
+            }
+        }
+
+        try {
+            $sent = wp_mail( $to, $subject, $message, $headers, $attachment );
+        } finally {
+            if ( $tmp_file && file_exists( $tmp_file ) ) {
+                wp_delete_file( $tmp_file );
+            }
         }
 
         if ( ! $sent ) {
