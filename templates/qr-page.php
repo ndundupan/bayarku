@@ -2,8 +2,12 @@
 /**
  * Template: QRIS QR Code payment page.
  *
- * Variables passed via load_template():
- *   $order WC_Order
+ * Variables set by Bayarku\Core\Loader::handle_payment_page():
+ *   $GLOBALS['bayarku_tpl_order'] WC_Order
+ *   $GLOBALS['bayarku_tpl_data']  array from Gateway::payment_page_data():
+ *       qr_content (string), qr_image (base64 PNG, optional), expires_at (unix ts)
+ *
+ * The template is provider-agnostic: it never reads `_bayarku_*` order meta.
  *
  * @package Bayarku
  */
@@ -12,13 +16,14 @@ defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- template variables, not global scope.
 $order = $GLOBALS['bayarku_tpl_order'];
+$data  = is_array( $GLOBALS['bayarku_tpl_data'] ?? null ) ? $GLOBALS['bayarku_tpl_data'] : [];
 
 get_header();
 
 $order_id     = $order->get_id();
-$qr_content   = $order->get_meta( '_bayarku_doku_qr_content' );
-$qr_image_b64 = $order->get_meta( '_bayarku_doku_qr_image' );
-$expires_at   = (int) $order->get_meta( '_bayarku_doku_qr_expires_at' );
+$qr_content   = (string) ( $data['qr_content'] ?? '' );
+$qr_image_b64 = (string) ( $data['qr_image'] ?? '' );
+$expires_at   = (int) ( $data['expires_at'] ?? 0 );
 $total        = $order->get_formatted_order_total();
 $order_number = $order->get_order_number();
 

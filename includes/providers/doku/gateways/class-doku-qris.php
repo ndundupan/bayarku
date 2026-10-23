@@ -14,8 +14,10 @@ use Bayarku\Providers\Doku\DokuProvider;
  * Flow:
  *   1. process_payment() → call DokuProvider::qris_generate() → save QR data to order meta
  *   2. Redirect buyer to /bayarku-payment/?bayarku_type=qr
- *   3. qr-page.php renders QR + countdown; JS polls /wp-admin/admin-ajax.php?action=bayarku_poll_qris
- *   4. AJAX handler queries DOKU → if paid, mark order complete → return thank-you URL
+ *   3. qr-page.php renders QR + countdown (data from payment_page_data());
+ *      JS polls /wp-admin/admin-ajax.php?action=bayarku_poll
+ *   4. Loader resolves this gateway from the order and calls ajax_poll() →
+ *      queries DOKU → if paid, mark order complete → return thank-you URL
  *   5. Webhook (backup): POST /wp-json/bayarku/v1/notify/doku → update order status
  *
  * Admin settings (stored in woocommerce_bayarku_doku_qris_settings option):
@@ -42,9 +44,8 @@ class DokuQris extends Gateway {
 
         parent::__construct();
 
-        // Hook AJAX (bayarku_poll_qris) dan woocommerce_order_status_cancelled didaftarkan di
-        // Bayarku\Core\Loader::boot() agar tetap berjalan saat gateway belum di-instantiate
-        // (cron hold-stock, WP-CLI, request AJAX).
+        // AJAX polling (`bayarku_poll`) and order-cancel hooks are registered
+        // generically by Bayarku\Core\Loader → ajax_poll() / on_order_cancelled().
     }
 
     // -------------------------------------------------------------------------
@@ -229,7 +230,7 @@ class DokuQris extends Gateway {
             WC()->cart->empty_cart();
 
             // Redirect to QR display page
-            return $this->redirect_to_payment_page( $order_id, 'qr' );
+            return $this->redirect_to_payment_page( $order_id, $this->payment_page_type() );
 
         } catch ( \Exception $e ) {
             wc_get_logger()->error( 'DOKU QRIS process_payment: ' . $e->getMessage(), [ 'source' => 'bayarku' ] );
@@ -239,43 +240,50 @@ class DokuQris extends Gateway {
     }
 
     // -------------------------------------------------------------------------
-    // AJAX polling
+    // Payment page (generic contract used by Loader + templates/qr-page.php)
     // -------------------------------------------------------------------------
 
-    public function ajax_poll_qris(): void {
-        $order_id = absint( wp_unslash( $_POST['order_id'] ?? 0 ) );
-        $nonce    = sanitize_text_field( wp_unslash( $_POST['nonce'] ?? '' ) );
+    public function payment_page_type(): string {
+        return 'qr';
+    }
 
-        if ( ! wp_verify_nonce( $nonce, 'bayarku_poll_' . $order_id ) ) {
-            wp_send_json_error( [ 'message' => 'Sesi tidak valid.' ], 403 );
-        }
+    public function payment_page_data( \WC_Order $order ): array {
+        return [
+            'qr_content'   => (string) $this->get_order_meta( $order, 'qr_content' ),
+            'qr_image'     => (string) $this->get_order_meta( $order, 'qr_image' ),
+            'expires_at'   => (int) $this->get_order_meta( $order, 'qr_expires_at' ),
+            'reference_no' => (string) $this->get_order_meta( $order, 'reference_no' ),
+        ];
+    }
 
-        $order = wc_get_order( $order_id );
-        if ( ! $order ) {
-            wp_send_json_error( [ 'message' => 'Pesanan tidak ditemukan.' ], 404 );
-        }
+    // -------------------------------------------------------------------------
+    // AJAX polling — called by Loader::dispatch_poll() after nonce/order checks
+    // -------------------------------------------------------------------------
+
+    public function ajax_poll( \WC_Order $order ): array {
+        $order_id = $order->get_id();
 
         // Check if already paid (may have been updated by webhook)
         if ( $order->is_paid() ) {
-            wp_send_json_success( [
-                'status'      => 'paid',
-                'redirect'    => $order->get_checkout_order_received_url(),
-            ] );
+            return [
+                'status'   => 'paid',
+                'redirect' => $order->get_checkout_order_received_url(),
+            ];
         }
 
         // Check QR expiry
         $expires_at = (int) $this->get_order_meta( $order, 'qr_expires_at' );
         if ( $expires_at && time() > $expires_at ) {
-            wp_send_json_success( [ 'status' => 'expired' ] );
+            return [ 'status' => 'expired' ];
+        }
+
+        $reference_no = $this->get_order_meta( $order, 'reference_no' );
+        if ( ! $reference_no ) {
+            return [ 'error' => 'Data transaksi tidak ditemukan.', 'code' => 500 ];
         }
 
         // Query DOKU
         try {
-            $reference_no = $this->get_order_meta( $order, 'reference_no' );
-            if ( ! $reference_no ) {
-                wp_send_json_error( [ 'message' => 'Data transaksi tidak ditemukan.' ], 500 );
-            }
-
             $partner_reference_no = $this->get_order_meta( $order, 'partner_reference_no' ) ?: (string) $order_id;
             $provider = new DokuProvider( $this->is_sandbox() );
             $result   = $provider->qris_query( $reference_no, $partner_reference_no );
@@ -287,10 +295,10 @@ class DokuQris extends Gateway {
                 $lock_key = 'bayarku_completing_' . $order_id;
                 if ( get_transient( $lock_key ) ) {
                     // Another process is completing this payment; return paid so JS redirects
-                    wp_send_json_success( [
+                    return [
                         'status'   => 'paid',
                         'redirect' => $order->get_checkout_order_received_url(),
-                    ] );
+                    ];
                 }
                 set_transient( $lock_key, 1, 60 );
 
@@ -310,18 +318,18 @@ class DokuQris extends Gateway {
 
                 delete_transient( $lock_key );
 
-                wp_send_json_success( [
+                return [
                     'status'   => 'paid',
                     'redirect' => $order->get_checkout_order_received_url(),
-                ] );
+                ];
             }
 
-            wp_send_json_success( [ 'status' => 'pending' ] );
+            return [ 'status' => 'pending' ];
 
         } catch ( \Exception $e ) {
             wc_get_logger()->error( 'DOKU QRIS poll: ' . $e->getMessage(), [ 'source' => 'bayarku' ] );
             // Don't expose internals; just say still pending so polling continues
-            wp_send_json_success( [ 'status' => 'pending' ] );
+            return [ 'status' => 'pending' ];
         }
     }
 
@@ -577,11 +585,14 @@ class DokuQris extends Gateway {
     // Cancel QR when order cancelled
     // -------------------------------------------------------------------------
 
-    public function cancel_qr_on_order_cancel( int $order_id ): void {
-        $order        = wc_get_order( $order_id );
-        $payment_method = $order ? $order->get_payment_method() : '';
+    /**
+     * Expire the QR at DOKU. Called by Loader::dispatch_order_cancelled() only
+     * for orders whose payment method is this gateway.
+     */
+    public function on_order_cancelled( \WC_Order $order ): void {
+        $order_id = $order->get_id();
 
-        if ( $payment_method !== $this->id ) {
+        if ( $order->get_payment_method() !== $this->id ) {
             return;
         }
 
