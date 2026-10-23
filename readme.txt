@@ -38,6 +38,7 @@ You need your own merchant account with the payment provider in order to use thi
 - Auto-polling every 4 seconds — page redirects to thank-you automatically when payment succeeds
 - Webhook backup (`POST /wp-json/bayarku/v1/notify/doku`) — catches payments missed by polling
 - Sandbox / Production toggle in WP Admin
+- Works with both the classic (shortcode) checkout and the WooCommerce Cart/Checkout Blocks
 - Credentials stored securely in WordPress options — never hardcoded
 - HPOS (High-Performance Order Storage) compatible
 - QR Code generated locally using PHP GD — no external requests beyond DOKU
@@ -111,3 +112,4 @@ Store owners using this plugin in regions covered by GDPR or similar privacy law
 
 = 1.0.0 =
 * Initial release — DOKU QRIS full implementation.
+* Support for WooCommerce Cart/Checkout Blocks.
