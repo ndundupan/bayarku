@@ -28,6 +28,12 @@ class DokuQris extends Gateway {
     protected bool   $absorb_fee = true; // QRIS: merchant covers fee
     protected string $provider   = 'doku';
 
+    /** Secret fields that a wp-config constant can take over (then kept out of the database). */
+    private const CONFIG_SECRETS = [
+        'client_secret' => 'BAYARKU_DOKU_CLIENT_SECRET',
+        'private_key'   => 'BAYARKU_DOKU_PRIVATE_KEY',
+    ];
+
     public function __construct() {
         $this->id                 = 'bayarku_doku_qris';
         $this->method_title       = 'QRIS (DOKU)';
@@ -126,6 +132,17 @@ class DokuQris extends Gateway {
                 'css'               => 'color:#555; background:#f9f9f9; cursor:text;',
             ],
         ] );
+
+        // Secrets set in wp-config: show where they live instead of an input ('title' fields are never saved).
+        foreach ( self::CONFIG_SECRETS as $field => $constant ) {
+            if ( defined( $constant ) ) {
+                $this->form_fields[ $field ] = [
+                    'title'       => $this->form_fields[ $field ]['title'],
+                    'type'        => 'title',
+                    'description' => 'Diatur lewat konstanta <code>' . $constant . '</code> di wp-config.php.',
+                ];
+            }
+        }
     }
 
     /**
@@ -140,10 +157,23 @@ class DokuQris extends Gateway {
 
         // Mirror individual credential options for DokuProvider
         update_option( 'bayarku_doku_client_id',     $this->get_option( 'client_id' ) );
-        update_option( 'bayarku_doku_client_secret', $this->get_option( 'client_secret' ) );
-        update_option( 'bayarku_doku_private_key',   $this->get_option( 'private_key' ) );
         update_option( 'bayarku_doku_merchant_id',   $this->get_option( 'merchant_id' ) );
         update_option( 'bayarku_doku_terminal_id',   $this->get_option( 'terminal_id' ) );
+
+        // Secrets from wp-config: remove any database copy instead of mirroring it
+        $from_config = false;
+        foreach ( self::CONFIG_SECRETS as $field => $constant ) {
+            if ( defined( $constant ) ) {
+                unset( $this->settings[ $field ] );
+                delete_option( 'bayarku_doku_' . $field );
+                $from_config = true;
+            } else {
+                update_option( 'bayarku_doku_' . $field, $this->get_option( $field ) );
+            }
+        }
+        if ( $from_config ) {
+            update_option( $this->get_option_key(), apply_filters( 'woocommerce_settings_api_sanitized_fields_' . $this->id, $this->settings ), 'yes' );
+        }
 
         // Clear cached token when credentials change
         delete_transient( 'bayarku_doku_token_sandbox' );
@@ -315,6 +345,13 @@ class DokuQris extends Gateway {
             $access_token = trim( $m[1] );
         }
 
+        // Reject stale or future-dated notifications so a captured request cannot be replayed later
+        $sent_at = strtotime( $timestamp );
+        if ( ! $sent_at || abs( time() - $sent_at ) > 5 * MINUTE_IN_SECONDS ) {
+            wc_get_logger()->warning( 'DOKU webhook: X-TIMESTAMP kosong atau di luar jendela 5 menit', [ 'source' => 'bayarku' ] );
+            return false;
+        }
+
         $provider = new DokuProvider( $this->is_sandbox() );
         return $provider->verify_webhook_signature( $raw_body, $timestamp, $external_id, $signature, $access_token );
     }
@@ -331,6 +368,22 @@ class DokuQris extends Gateway {
 
         if ( ! $order ) {
             return new \WP_REST_Response( [ 'responseCode' => '4042512', 'responseMessage' => 'Order not found' ], 404 );
+        }
+
+        // The notification must match the QR we issued for this order: our gateway, DOKU's referenceNo, the amount
+        $expected_ref = (string) $this->get_order_meta( $order, 'reference_no' );
+        $paid_amount  = $body['amount']['value'] ?? null;
+        $problem      = '';
+        if ( $order->get_payment_method() !== $this->id ) {
+            $problem = 'metode bayar pesanan bukan ' . $this->id;
+        } elseif ( $reference === '' || $expected_ref === '' || ! hash_equals( $expected_ref, (string) $reference ) ) {
+            $problem = 'originalReferenceNo tidak cocok';
+        } elseif ( $paid_amount === null || (int) round( (float) $paid_amount ) !== (int) round( (float) $order->get_total() ) ) {
+            $problem = 'nominal tidak cocok';
+        }
+        if ( $problem !== '' ) {
+            wc_get_logger()->warning( sprintf( 'DOKU webhook ditolak untuk pesanan #%d: %s', $order_id, $problem ), [ 'source' => 'bayarku' ] );
+            return new \WP_REST_Response( [ 'responseCode' => '4002501', 'responseMessage' => 'Invalid Field Format' ], 400 );
         }
 
         if ( $tx_status === '00' ) {
