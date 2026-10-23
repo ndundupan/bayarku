@@ -42,12 +42,9 @@ class DokuQris extends Gateway {
 
         parent::__construct();
 
-        // AJAX handlers
-        add_action( 'wp_ajax_bayarku_poll_qris',        [ $this, 'ajax_poll_qris' ] );
-        add_action( 'wp_ajax_nopriv_bayarku_poll_qris', [ $this, 'ajax_poll_qris' ] );
-
-        // Cancel expired QR when order is cancelled
-        add_action( 'woocommerce_order_status_cancelled', [ $this, 'cancel_qr_on_order_cancel' ] );
+        // Hook AJAX (bayarku_poll_qris) dan woocommerce_order_status_cancelled didaftarkan di
+        // Bayarku\Core\Loader::boot() agar tetap berjalan saat gateway belum di-instantiate
+        // (cron hold-stock, WP-CLI, request AJAX).
     }
 
     // -------------------------------------------------------------------------

@@ -47,6 +47,10 @@ class Loader {
         add_action( 'wp_ajax_bayarku_poll_qris',        [ $this, 'dispatch_poll_qris' ] );
         add_action( 'wp_ajax_nopriv_bayarku_poll_qris', [ $this, 'dispatch_poll_qris' ] );
 
+        // Expire QR di DOKU saat pesanan dibatalkan. Didaftarkan di sini (bukan di konstruktor
+        // gateway) agar tetap jalan saat gateway belum di-instantiate: cron hold-stock, WP-CLI.
+        add_action( 'woocommerce_order_status_cancelled', [ $this, 'dispatch_cancel_qr' ] );
+
         // Enqueue frontend assets
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
     }
@@ -54,6 +58,11 @@ class Loader {
     public function dispatch_poll_qris(): void {
         $gateway = new \Bayarku\Providers\Doku\Gateways\DokuQris();
         $gateway->ajax_poll_qris();
+    }
+
+    public function dispatch_cancel_qr( $order_id ): void {
+        $gateway = new \Bayarku\Providers\Doku\Gateways\DokuQris();
+        $gateway->cancel_qr_on_order_cancel( (int) $order_id );
     }
 
     public function register_gateways( array $gateways ): array {
