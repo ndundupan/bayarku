@@ -105,11 +105,14 @@ class DokuProvider extends Provider {
      *
      * @param int    $order_id          WC order ID (used as partnerReferenceNo)
      * @param int    $amount_idr        Order total in IDR (integer)
-     * @param string $validity_period   ISO 8601 duration, e.g. 'PT30M' for 30 minutes
-     * @return array{qrContent: string, referenceNo: string}
+     * @param string $validity_period   QR expiry as an absolute datetime in Asia/Jakarta,
+     *                                  format 'Y-m-d\TH:i:sP' (e.g. 2026-10-23T14:30:00+07:00).
+     *                                  Sent to DOKU as validityPeriod; empty string omits the field.
+     * @param string $postal_code       Merchant postal code (digits, max 5)
+     * @return array{qrContent: string, referenceNo: string, partnerReferenceNo: string}
      * @throws \RuntimeException
      */
-    public function qris_generate( int $order_id, int $amount_idr, string $validity_period = 'PT30M', string $postal_code = '' ): array {
+    public function qris_generate( int $order_id, int $amount_idr, string $validity_period = '', string $postal_code = '' ): array {
         $body = [
             'partnerReferenceNo' => $order_id . '-' . time(),
             'amount'             => [
@@ -123,6 +126,10 @@ class DokuProvider extends Provider {
                 'feeType'    => 1,
             ],
         ];
+
+        if ( $validity_period !== '' ) {
+            $body['validityPeriod'] = $validity_period;
+        }
 
         $endpoint = '/snap-adapter/b2b/v1.0/qr/qr-mpm-generate';
         $response = $this->post( $endpoint, $body );

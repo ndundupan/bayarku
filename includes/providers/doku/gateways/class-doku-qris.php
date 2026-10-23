@@ -197,10 +197,11 @@ class DokuQris extends Gateway {
         try {
             $provider = new DokuProvider( $this->is_sandbox() );
             $amount   = (int) round( $order->get_total() );
-            $validity_minutes = (int) $this->get_option( 'qr_validity', 30 );
-            $validity = ( new \DateTime( 'now', new \DateTimeZone( 'Asia/Jakarta' ) ) )
-                ->modify( "+{$validity_minutes} minutes" )
-                ->format( 'Y-m-d\TH:i:sP' );
+            // Hitung waktu kedaluwarsa QR sekali; dipakai untuk validityPeriod DOKU dan meta qr_expires_at.
+            $validity_minutes = max( 1, (int) $this->get_option( 'qr_validity', 30 ) );
+            $expires_dt = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'Asia/Jakarta' ) ) )
+                ->modify( "+{$validity_minutes} minutes" );
+            $validity   = $expires_dt->format( 'Y-m-d\TH:i:sP' );
 
             $postal_code = substr( preg_replace( '/\D/', '', $this->get_option( 'postal_code', '' ) ), 0, 5 );
             $result = $provider->qris_generate( $order_id, $amount, $validity, $postal_code );
@@ -213,7 +214,7 @@ class DokuQris extends Gateway {
                 'qr_content'           => $result['qrContent'],
                 'reference_no'         => $result['referenceNo'],
                 'partner_reference_no' => $result['partnerReferenceNo'],
-                'qr_expires_at'        => time() + ( (int) $this->get_option( 'qr_validity', 30 ) * 60 ),
+                'qr_expires_at'        => $expires_dt->getTimestamp(),
                 'status'               => 'pending',
             ];
             if ( $qr_image_b64 ) {
