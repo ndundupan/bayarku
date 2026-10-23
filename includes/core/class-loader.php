@@ -49,6 +49,35 @@ class Loader {
 
         // Enqueue frontend assets
         add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+
+        // WooCommerce Cart/Checkout Blocks support
+        add_action( 'woocommerce_blocks_loaded', [ $this, 'register_blocks_support' ] );
+    }
+
+    /**
+     * Daftarkan setiap gateway Bayarku ke registry metode pembayaran WooCommerce Blocks.
+     * Aman dijalankan pada WooCommerce tanpa Blocks: kelas abstraknya dicek dulu.
+     */
+    public function register_blocks_support(): void {
+        if ( ! class_exists( \Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType::class ) ) {
+            return;
+        }
+
+        add_action(
+            'woocommerce_blocks_payment_method_type_registration',
+            function ( \Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $registry ): void {
+                if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
+                    return;
+                }
+
+                // Pakai instance yang sudah dibuat WooCommerce agar hook gateway tidak terdaftar dua kali.
+                foreach ( WC()->payment_gateways()->payment_gateways() as $gateway ) {
+                    if ( in_array( get_class( $gateway ), self::GATEWAYS, true ) ) {
+                        $registry->register( new BlocksSupport( $gateway ) );
+                    }
+                }
+            }
+        );
     }
 
     public function dispatch_poll_qris(): void {
