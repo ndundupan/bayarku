@@ -90,7 +90,7 @@ Checkout → process_payment()
     └── Redirect ke /bayarku-payment/?bayarku_order=X&bayarku_type=qr&bayarku_key=K
              │
              ├── PHP generate QR PNG lokal (GD + bundled qrcode-generator) → simpan base64 di order meta
-             ├── JS polling /wp-admin/admin-ajax.php?action=bayarku_poll_qris setiap 4 detik
+             ├── JS polling /wp-admin/admin-ajax.php?action=bayarku_poll setiap 4 detik
              │       └── Query DOKU: /qr/qr-mpm-query
              │               ├── status=00 → order.payment_complete() → redirect ke thank-you
              │               └── pending  → lanjut polling

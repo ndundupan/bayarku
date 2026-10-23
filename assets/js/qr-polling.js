@@ -64,7 +64,7 @@
             url:    cfg.ajaxUrl,
             method: 'POST',
             data: {
-                action:   'bayarku_poll_qris',
+                action:   cfg.action || 'bayarku_poll',
                 order_id: cfg.orderId,
                 nonce:    cfg.nonce,
             },

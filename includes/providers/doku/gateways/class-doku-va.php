@@ -29,6 +29,10 @@ class DokuVa extends Gateway {
         return [ 'result' => 'failure' ];
     }
 
+    public function payment_page_type(): string {
+        return 'va';
+    }
+
     public function validate_webhook( \WP_REST_Request $request ): bool {
         return false;
     }
